@@ -16,24 +16,32 @@
  * limitations under the License.
  */
 
-package org.apache.flink.runtime.io.network.partition.hybrid;
+package org.apache.flink.state.forst;
 
-/** Integrate the buffer index and the channel id which it belongs. */
-public class BufferIndexAndChannel {
-    private final int bufferIndex;
+import org.apache.flink.core.state.InternalStateFuture;
 
-    private final int channel;
+import java.io.IOException;
 
-    public BufferIndexAndChannel(int bufferIndex, int channel) {
-        this.bufferIndex = bufferIndex;
-        this.channel = channel;
+/**
+ * The Get access request for ForStDB.
+ *
+ * @param <K> The type of key in get access request.
+ * @param <V> The type of value returned by get request.
+ */
+public class ForStDBSingleGetRequest<K, N, V> extends ForStDBGetRequest<K, N, V, V> {
+
+    ForStDBSingleGetRequest(
+            ContextKey<K, N> key, ForStInnerTable<K, N, V> table, InternalStateFuture<V> future) {
+        super(key, table, future);
     }
 
-    public int getBufferIndex() {
-        return bufferIndex;
-    }
-
-    public int getChannel() {
-        return channel;
+    @Override
+    public void completeStateFuture(byte[] bytesValue) throws IOException {
+        if (bytesValue == null) {
+            future.complete(null);
+            return;
+        }
+        V value = table.deserializeValue(bytesValue);
+        future.complete(value);
     }
 }
